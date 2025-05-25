@@ -1,8 +1,18 @@
 import json
 from fastapi import FastAPI, Query
 from typing import Optional, List
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+# Configure CORS to allow all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Load the student data from the JSON file
 def load_students():
