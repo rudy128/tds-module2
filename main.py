@@ -1,5 +1,6 @@
 import json
-from fastapi import FastAPI, Query
+import os
+from fastapi import FastAPI, Query, HTTPException
 from typing import Optional, List
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,8 +17,25 @@ app.add_middleware(
 
 # Load the student data from the JSON file
 def load_students():
-    with open("q-vercel-python.json", "r") as f:
-        return json.load(f)
+    try:
+        # Get the directory of the current file
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # Construct path to JSON file
+        json_path = os.path.join(current_dir, "q-vercel-python.json")
+        
+        with open(json_path, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        # Try relative path as fallback
+        try:
+            with open("q-vercel-python.json", "r") as f:
+                return json.load(f)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Could not load student data: {str(e)}")
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"Invalid JSON format: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error loading data: {str(e)}")
 
 @app.get("/")
 def read_root():
@@ -31,15 +49,12 @@ def get_api_params(
     Get filtered student data based on query parameters.
     """
     students = load_students()
-    list= []
+    result = []
     # Filter by name if provided (can be multiple names)
     if name:
         for i in name:
             for j in students:
                 if j["name"] == i:
-                    list.append(j["marks"])
-        
-    # Extract just the marks for the response in the original order
-    # marks = [student["marks"] for student in filtered_students]
+                    result.append(j["marks"])
     
-    return {"marks": list}
+    return {"marks": result}
